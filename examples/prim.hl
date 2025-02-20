@@ -1,0 +1,13 @@
+-- data
+
+renderiza?
+valor:
+@valor
+>add() adicionar
+
+-- code
+
+valor = 5
+function add()
+    valor = valor + 1
+end

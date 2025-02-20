@@ -1,0 +1,24 @@
+-- data
+
+Apresentacao do programa >_<
+Da para somente ter texto, como aqui!
+Ou da para ter uma variavel com Lua.
+@vari
+Para faze-la aparecer, comece a linha com "@"
+e em seguida o nome da variavel.
+Mas lembre-se que a variavel deve estar
+definida na parte code do arquivo
+
+Tambem e possivel ter botoes que executam
+uma funcao definida em lua, como aqui:
+@valor
+>add() Aumentar o valor
+Aumenta
+
+-- code
+
+vari = "oiii!"
+valor = 1
+function add()
+    valor = valor + 1
+end

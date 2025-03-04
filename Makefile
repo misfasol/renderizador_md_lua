@@ -3,3 +3,7 @@ build:
 	
 run: build
 	./main
+
+elem:
+	gcc -o elem elem.c -Wall -Werror -L./raylib/lib -lraylib -lopengl32 -lgdi32 -lwinmm
+	./elem

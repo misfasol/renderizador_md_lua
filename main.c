@@ -9,6 +9,8 @@
 #include "./lua_src/lualib.h"
 #include "./lua_src/lauxlib.h"
 
+#include "elem.c"
+
 #define WIDTH 1280
 #define HEIGHT 720
 
@@ -162,6 +164,15 @@ void rerenderizar(lua_State* L, Linha* linhas, int qtd) {
 }
 
 int main() {
+
+    // Elemento c1 = novo_container("c1");
+    // Elemento b1 = novo_botao("b1");
+    // Elemento b2 = novo_botao("b2");
+    // adicionar_filho(&c1, &b1);
+    // adicionar_filho(&c1, &b2);
+
+    // return 0;
+
     // separar conteudo
     char* str_conteudo = ler_arquivo("examples/ter.hl");
     char* data;

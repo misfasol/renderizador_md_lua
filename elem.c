@@ -105,7 +105,8 @@ Elemento* novo_botao(char* texto) {
     e->tipo = TIPO_ELEMENTO_BOTAO;
     e->conteudo.botao = malloc(sizeof(Elemento_Botao));
     e->conteudo.botao->texto = texto;
-    e->width = MeasureText(texto, 20);
+    e->width = (float)MeasureText(texto, 20);
+    printf("%s %f\n", e->conteudo.botao->texto, MeasureTextEx(GetFontDefault(), e->conteudo.botao->texto, 20, 5).x);
     e->height = 25;
     return e;
 }
@@ -117,101 +118,105 @@ typedef struct {
 } Tamanho_Elemento;
 
 void calcular_tamanho_elemento(Elemento* el) {
-    Tamanho_Elemento t = {0};
-    if (el->flex_dir == FLEX_DIR_COL) {
-        if (el->width <= 0) {
-            int maior = 0;
-            for (int i = 0; i < el->filhos.qtd; i++) {
-                // Tamanho_Elemento atual = calcular_tamanho_elemento(el->filhos.items[i]);
-                if (el->filhos.items[i]->width < maior) maior = el->filhos.items[i]->width;
+    for (int i = 0; i < el->filhos.qtd; i++)
+        calcular_tamanho_elemento(el->filhos.items[i]);
+
+    if (el->tipo_width == TIPO_WIDTH_ABSOLUTO) {
+        if (el->width < 0) {
+            el->width = 0;
+            if (el->flex_dir == FLEX_DIR_COL) {
+                for (int i = 0; i < el->filhos.qtd; i++) {
+                    if (el->filhos.items[i]->width > el->width)
+                        el->width = el->filhos.items[i]->width;
+                }
+            } else {
+                for (int i = 0; i < el->filhos.qtd; i++) {
+                    // calcular_tamanho_elemento(el->filhos.items[i]);
+                    el->width += el->filhos.items[i]->width;
+                }
             }
-        } else {
-            t.width = el->width;
         }
-        if (el->height <= 0) {
-            for (int i = 0; i < el->filhos.qtd; i++) {
-                t.height += calcular_tamanho_elemento(el->filhos.items[i]).height;
+    } else if (el->tipo_width == TIPO_WIDTH_PORCENTAGEM) {
+        el->width = el->pai->width * el->porcentagem_widht;
+    }
+
+    if (el->tipo_height == TIPO_HEIGHT_ABSOLUTO) {
+        if (el->height > 0) {
+            el->height = 0;
+            if (el->flex_dir == FLEX_DIR_COL) {
+                for (int i = 0; i < el->filhos.qtd; i++) {
+                    // calcular_tamanho_elemento(el->filhos.items[i]);
+                    el->height += el->filhos.items[i]->height;
+                }
+            } else {
+                for (int i = 0; i < el->filhos.qtd; i++) {
+                    if (el->filhos.items[i]->height > el->height)
+                    el->height = el->filhos.items[i]->height;
+                }
             }
-        } else {
-            t.height = el->height;
+        }
+    } else if (el->tipo_height == TIPO_HEIGHT_PORCENTAGEM) {
+        el->height = el->pai->height * el->porcentegem_height;
+    }
+}
+
+void calcular_posicoes(Elemento* el, int x, int y) {
+    el->posX = x;
+    el->posY = y;
+    if (el->flex_dir == FLEX_DIR_COL) {
+        float ulty = y;
+        for (int i = 0; i < el->filhos.qtd; i++) {
+            el->filhos.items[i]->posY = ulty;
+            ulty += el->filhos.items[i]->height;
+            el->filhos.items[i]->posX = x + ((el->width - el->filhos.items[i]->width) / 2);
         }
     } else {
-        if (el->width <= 0) {
-            for (int i = 0; i < el->filhos.qtd; i++) {
-                t.height += calcular_tamanho_elemento(el->filhos.items[i]).width;
-            }
-        } else {
-            t.width = el->width;
+        float ultx = x;
+        for (int i = 0; i < el->filhos.qtd; i++) {
+            el->filhos.items[i]->posX = ultx;
+            ultx += el->filhos.items[i]->width;
+            el->filhos.items[i]->posY = y + ((el->height - el->filhos.items[i]->height) / 2);
         }
-        if (el->height <= 0) {
-            int maior = 0;
-            for (int i = 0; i < el->filhos.qtd; i++) {
-                Tamanho_Elemento atual = calcular_tamanho_elemento(el->filhos.items[i]);
-                if (atual.height < maior) maior = atual.height;
-            }
-        } else {
-            t.height = el->height;
-        }
-    }
-    el->width = t.width;
-    el->height = t.height;
-    // return t;
-}
-
-void calcular_posicoes(Elemento* el, int x, int y, int width, int height) {
-    switch (el->tipo) {
-    case TIPO_ELEMENTO_CONTAINER:
-        
-        break;
-    case TIPO_ELEMENTO_BOTAO:
-        break;
-    default:
-        printf("nao cobriu todos os casos em calcular_posicoes\n");
-        exit(1);
     }
 }
 
-void atravessar_rec(Elemento* el, int x, int y, int width, int height) {
+void pintar_elementos(Elemento* el) {
     switch (el->tipo) {
     case TIPO_ELEMENTO_CONTAINER:
-        DrawRectangle(x, y, width, height, el->background_color);
+        DrawRectangle(el->posX, el->posY, el->width, el->height, el->background_color);
         break;
     case TIPO_ELEMENTO_BOTAO:
-        DrawRectangle(x, y, 100, 20, el->background_color);
-        DrawText(el->conteudo.botao->texto, x, y, 20, BLACK);
+        DrawRectangle(el->posX, el->posY, el->width, el->height, el->background_color);
+        DrawText(el->conteudo.botao->texto, el->posX, el->posY, 20, BLACK);
         break;
     default:
-        printf("nao cobriu todos os casos em atravessar_rec\n");
+        printf("nao cobriu todos os casos em pintar_elementos\n");
         exit(1);
     }
-    int ultx = 0;
-    int ulty = 0;
     for (int i = 0; i < el->filhos.qtd; i++) {
-        atravessar_rec(el->filhos.items[i], ultx, ulty, width / el->filhos.qtd, height);
-        ultx += width / el->filhos.qtd;
-        ulty += 0;
+        pintar_elementos(el->filhos.items[i]);
     }
 }
 
 // debug
 
-void printar_elementos(Elemento* raiz, int nivel) {
+void printar_elementos(Elemento* el, int nivel) {
     for (int i = 0; i < nivel; i++) {
         printf(" ");
     }
-    switch (raiz->tipo) {
+    switch (el->tipo) {
     case TIPO_ELEMENTO_CONTAINER:
-        printf("c: %s\n", raiz->conteudo.container->nome);
+        printf("c: %s px: %f, py: %f, w: %f, h: %f\n", el->conteudo.container->nome, el->posX, el->posY, el->width, el->height);
         break;
     case TIPO_ELEMENTO_BOTAO:
-        printf("b: %s\n", raiz->conteudo.botao->texto);
+        printf("b: %s px: %f, py: %f, w: %f, h: %f\n", el->conteudo.botao->texto, el->posX, el->posY, el->width, el->height);
         break;
     default:
         printf("nao cobriu todos os casos no printar elementos\n");
         exit(1);
     }
-    for (int i = 0; i < raiz->filhos.qtd; i++) {
-        printar_elementos(raiz->filhos.items[i], nivel + 1);
+    for (int i = 0; i < el->filhos.qtd; i++) {
+        printar_elementos(el->filhos.items[i], nivel + 1);
     }
 }
 
@@ -245,7 +250,9 @@ int main() {
     
     int w = 1280;
     int h = 720;
-    calcular_posicoes(c1, 0, 0, w, -1);
+    calcular_posicoes(c1, 0, 0);
+    printf("\n");
+    printar_elementos(c1, 0);
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetTraceLogLevel(LOG_ERROR);
@@ -257,14 +264,14 @@ int main() {
         if (IsWindowResized()) {
             w = GetScreenWidth();
             h = GetScreenHeight();
-            calcular_posicoes(c1, 0, 0, w, -1);
+            calcular_posicoes(c1, 0, 0);
         }
 
         BeginDrawing();
 
         ClearBackground(BLACK);
-        // DrawCircle(100, 100, 50, RED);
-        atravessar_rec(c1, 0, 0, w, h);
+
+        pintar_elementos(c1);
 
         DrawFPS(500, 500);
 

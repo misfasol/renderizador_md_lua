@@ -15,6 +15,16 @@ typedef enum {
     FLEX_DIR_COL,
 } FLEX_DIR;
 
+typedef enum {
+    TIPO_WIDTH_ABSOLUTO,
+    TIPO_WIDTH_PORCENTAGEM,
+} TIPO_WIDTH; 
+
+typedef enum {
+    TIPO_HEIGHT_ABSOLUTO,
+    TIPO_HEIGHT_PORCENTAGEM,
+} TIPO_HEIGHT;
+
 typedef struct elem Elemento;
 
 // Definição da lista de elementos
@@ -27,7 +37,6 @@ typedef struct {
 
 typedef struct {
     char* nome;
-    FLEX_DIR flex_dir;
 } Elemento_Container;
 
 typedef struct {
@@ -39,7 +48,12 @@ struct elem {
     Elemento* pai;
     Lista_Elementos filhos;
     Color background_color;
-    float posX, posY, width, height;
+    FLEX_DIR flex_dir;
+    TIPO_WIDTH tipo_width;
+    TIPO_HEIGHT tipo_height;
+    float porcentagem_widht, porcentegem_height;
+    float width, height;
+    float posX, posY;
     union {
         Elemento_Container* container;
         Elemento_Botao* botao;
@@ -65,9 +79,14 @@ void adicionar_filho(Elemento* pai, Elemento* filho) {
 
 Elemento* novo_elemento() {
     Elemento* e = malloc(sizeof(Elemento));
+    e->pai = NULL;
     e->filhos = (Lista_Elementos){.items = NULL, .qtd = 0, .cap = 0};
     e->background_color = WHITE;
-    e->pai = NULL;
+    e->flex_dir = FLEX_DIR_ROW;
+    e->tipo_width = TIPO_WIDTH_ABSOLUTO;
+    e->tipo_height = TIPO_HEIGHT_ABSOLUTO;
+    e->width = -1;
+    e->height = -1;
     e->posX = 0;
     e->posY = 0;
     return e;
@@ -78,9 +97,6 @@ Elemento* novo_container(char* nome) {
     e->tipo = TIPO_ELEMENTO_CONTAINER;
     e->conteudo.container = malloc(sizeof(Elemento_Container));
     e->conteudo.container->nome = nome;
-    e->conteudo.container->flex_dir = FLEX_DIR_ROW;
-    e->width = 0;
-    e->height = 0;
     return e;
 }
 
@@ -96,27 +112,50 @@ Elemento* novo_botao(char* texto) {
 
 // calculos e renderizacao
 
-Vector2 calcular_tamanho_total(Elemento* el) {
-    Vector2 tam = {0};
-    switch (el->tipo) {
-    case TIPO_ELEMENTO_CONTAINER:
-        tam.x += el->width;
-        tam.y += el->height;
-        break;
-        Vector2 tt = {0};
-        for (int i = 0; i < el->filhos.qtd; i++) {
-            tt = calcular_tamanho_total(el->filhos.items[i]);
-            tam.x += tt.x;
-            tam.y += tt.y;
+typedef struct {
+    int width, height;
+} Tamanho_Elemento;
+
+void calcular_tamanho_elemento(Elemento* el) {
+    Tamanho_Elemento t = {0};
+    if (el->flex_dir == FLEX_DIR_COL) {
+        if (el->width <= 0) {
+            int maior = 0;
+            for (int i = 0; i < el->filhos.qtd; i++) {
+                // Tamanho_Elemento atual = calcular_tamanho_elemento(el->filhos.items[i]);
+                if (el->filhos.items[i]->width < maior) maior = el->filhos.items[i]->width;
+            }
+        } else {
+            t.width = el->width;
         }
-    case TIPO_ELEMENTO_BOTAO:
-        tam.x += el->width;
-        break;
-    default:
-        printf("nao cobriu todos os casos em calcular_tamanho_total\n");
-        exit(1);
+        if (el->height <= 0) {
+            for (int i = 0; i < el->filhos.qtd; i++) {
+                t.height += calcular_tamanho_elemento(el->filhos.items[i]).height;
+            }
+        } else {
+            t.height = el->height;
+        }
+    } else {
+        if (el->width <= 0) {
+            for (int i = 0; i < el->filhos.qtd; i++) {
+                t.height += calcular_tamanho_elemento(el->filhos.items[i]).width;
+            }
+        } else {
+            t.width = el->width;
+        }
+        if (el->height <= 0) {
+            int maior = 0;
+            for (int i = 0; i < el->filhos.qtd; i++) {
+                Tamanho_Elemento atual = calcular_tamanho_elemento(el->filhos.items[i]);
+                if (atual.height < maior) maior = atual.height;
+            }
+        } else {
+            t.height = el->height;
+        }
     }
-    return tam;
+    el->width = t.width;
+    el->height = t.height;
+    // return t;
 }
 
 void calcular_posicoes(Elemento* el, int x, int y, int width, int height) {
@@ -178,13 +217,17 @@ void printar_elementos(Elemento* raiz, int nivel) {
 
 int main() {
     Elemento* c1 = novo_container("c1");
-    c1->width = 100;
+    c1->tipo_width = TIPO_WIDTH_PORCENTAGEM;
+    c1->porcentagem_widht = 100;
+    c1->height = 720;
     Elemento* c2 = novo_container("c2");
-    c2->width = 50;
-    c2->conteudo.container->flex_dir = FLEX_DIR_COL;
+    c2->tipo_width = TIPO_WIDTH_PORCENTAGEM;
+    c2->porcentagem_widht = 50;
+    c2->flex_dir = FLEX_DIR_COL;
     Elemento* c3 = novo_container("c3");
-    c3->width = 50;
-    c3->conteudo.container->flex_dir = FLEX_DIR_COL;
+    c3->tipo_width = TIPO_WIDTH_PORCENTAGEM;
+    c3->porcentagem_widht = 50;
+    c3->flex_dir = FLEX_DIR_COL;
     adicionar_filho(c1, c2);
     adicionar_filho(c1, c3);
     Elemento* b1 = novo_botao("b1");
@@ -205,7 +248,7 @@ int main() {
     calcular_posicoes(c1, 0, 0, w, -1);
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    
+    SetTraceLogLevel(LOG_ERROR);
     InitWindow(w, h, "tela elem");
     SetTargetFPS(144);
 

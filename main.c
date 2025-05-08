@@ -9,7 +9,7 @@
 #include "./lua_src/lualib.h"
 #include "./lua_src/lauxlib.h"
 
-#include "elem.c"
+// #include "elem.c"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -174,7 +174,7 @@ int main() {
     // return 0;
 
     // separar conteudo
-    char* str_conteudo = ler_arquivo("examples/ter.hl");
+    char* str_conteudo = ler_arquivo("examples/seg.hl");
     char* data;
     char* code;
     separar_conteudo(str_conteudo, &data, &code);
